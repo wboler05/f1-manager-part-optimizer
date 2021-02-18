@@ -20,12 +20,17 @@ def tell_best(combo_filename, coeffs):
     df = update_fitness(df, np.array(coeffs))
     return df.loc[df['fitness'].idxmax()]
 
-def optimize(combo_filename, optimize_file, use_wins):
+def optimize(combo_filename, optimize_file, use_wins, aggregate_tracks):
     perf_columns = ['power', 'aero', 'grip', 'reliability', 'pit_stop_time']
     group_columns = ['Brakes', 'Gearbox', 'Rear Wing', 'Front Wing', 'Suspension', 'Engine']
     df = pd.read_csv(combo_filename)
     rankings_df = pd.read_csv(optimize_file).dropna()
-    avg = rankings_df.groupby(by=group_columns).mean()[['Win','Points']]
+    avg = None
+    if aggregate_tracks:
+        track_groups = rankings_df.groupby(by=group_columns + ['Track']).mean()[['Win', 'Points']]
+        avg = track_groups.groupby(by=group_columns).mean()
+    else:
+        avg = rankings_df.groupby(by=group_columns).mean()[['Win','Points']]
 
     learn_df = pd.DataFrame(columns=perf_columns + ['fitness'])
     for row in avg.iterrows():
@@ -57,11 +62,12 @@ def main():
     parser.add_argument('--coeffs', '-c', nargs=5, type=float, default=[1.0, 1.0, 1.0, 1.0, -1.0], help='Coeffs from [power, aero, grip, reliability, pit_stop_time]')
     parser.add_argument('--optimize', '-p', type=str, help='File to optimize against')
     parser.add_argument('--use-wins', '-w', action='store_true', help='Use wins instead of points')
+    parser.add_argument('--aggregate-tracks', action='store_true', help='Aggregates means of fitness by tracks')
     args = parser.parse_args()
 
     coeffs = args.coeffs
     if args.optimize is not None:
-        coeffs = optimize(args.combo_file, args.optimize, args.use_wins)
+        coeffs = optimize(args.combo_file, args.optimize, args.use_wins, args.aggregate_tracks)
     print(tell_best(args.combo_file, coeffs))
 
 
