@@ -61,6 +61,7 @@ def generate_combinations(master_equipment_df):
 
     combo_performances = list()
     df_filler = list()
+    # TODO I'm doing something stupid here that I'll fix later
     for i,c_dict in tqdm.tqdm(enumerate(combos), total=len(combos)):
         assignment_dict = dict()
         total_dict = {

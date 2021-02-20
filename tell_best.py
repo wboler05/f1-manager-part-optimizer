@@ -51,7 +51,7 @@ def optimize(combo_filename, optimize_file, use_wins, aggregate_tracks):
     data = learn_df.values
     A = data[:,:-1]
     b = data[:,-1]
-    x_hat = np.linalg.lstsq(A,b)[0]
+    x_hat = np.linalg.lstsq(A,b, rcond=None)[0]
     print("Coeffs: {}".format(x_hat))
 
     return x_hat
