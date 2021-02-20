@@ -8,41 +8,53 @@ from copy import deepcopy
 
 import matplotlib.pyplot as plt
 
-def extrapolate(graph_dict):
+def fold_in_combos(graph_dict):
+    '''
+    Given a dict of equipment types and names, enumerate all combinations
+
+    We are looking for sets of the following:
+    {brakes}{gearbox}{rear wing}{front wing}{suspension}{engine}
+    This produces a table of all protential combinations of these types
+
+    @param dict : k=type, v=list of names
+    @return list(dict) : list of dict of value combo, accessed by type
+        i.e.: 
+            ret_val[0] = {'Engine': 'Passion', 'Suspension': 'Bungee', ... , 'Gearbox': 'MSM' }
+    '''
+    # Instantiate return value
+    final_list = list()
+    # Pop first entry
+    first_key = list(graph_dict.keys())[0]
+    key_list = graph_dict[first_key]
     if len(graph_dict) > 1:
-        graph_dict_cp = deepcopy(graph_dict)
-        first_key = list(graph_dict_cp.keys())[0]
-        del graph_dict_cp[first_key]
-        key_list = graph_dict[first_key]
-        r_list = extrapolate(graph_dict_cp)
-        final_list = list()
+        # Build next list from remaining keys
+        r_list = fold_in_combos({k:v for k,v in graph_dict.items() if k != first_key})
+        # Combine all combinations
         for r in r_list:
             for v in key_list:
                 z = deepcopy(r)
                 z[first_key] = v
                 final_list.append(z)
-        return final_list
     else:
-        first_key = list(graph_dict.keys())[0]
-        key_list = graph_dict[first_key]
-        final_list = list()
+        # If entry size is 1, build nth layer
         for v in key_list:
             final_list.append({
                 first_key:v,
             })
-        return final_list
+    # Return combinations
+    return final_list
+
 
 def generate_combinations(master_equipment_df):
-    df = master_equipment_df
     type_dict = dict()
-    types = set(df['type'])
+    types = set(master_equipment_df['type'])
     for t in types:
-        type_dict[t] = set(df[df['type'] == t]['name'])
-    print(df.columns)
+        type_dict[t] = set(master_equipment_df[master_equipment_df['type'] == t]['name'])
+    print(master_equipment_df.columns)
     
     print(type_dict)
     print("Building combos")
-    combos = extrapolate(type_dict)
+    combos = fold_in_combos(type_dict)
     print(len(combos))
 
     sorted_types = sorted(list(types))
@@ -59,7 +71,10 @@ def generate_combinations(master_equipment_df):
             'pit_stop_time': 0.,
         }
         for t,name in c_dict.items():
-            val_df = df[np.logical_and(df['type'] == t, df['name'] == name)]
+            val_df = master_equipment_df[np.logical_and(
+                master_equipment_df['type'] == t, 
+                master_equipment_df['name'] == name
+            )]
             assignment_dict[t] = {
                 'name':name,
                 'power':val_df['power'].iat[0],
@@ -90,9 +105,13 @@ def generate_combinations(master_equipment_df):
 
 
 def main():
+
+    data_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
+    combinations_file_default_path = os.path.join(data_dir, 'combinations.csv')
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('master_equipment_file', help='CSV')
-    parser.add_argument('--output-filename', '-o', default='combinations.csv', help='Output CSV')
+    parser.add_argument('master_equipment_file', help='CSV with full list of available equipement')
+    parser.add_argument('--output-filename', '-o', default=combinations_file_default_path, help='Output CSV of combinations')
     args = parser.parse_args()
 
     assert(os.path.exists(args.master_equipment_file))

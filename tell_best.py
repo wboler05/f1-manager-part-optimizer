@@ -25,6 +25,7 @@ def optimize(combo_filename, optimize_file, use_wins, aggregate_tracks):
     group_columns = ['Brakes', 'Gearbox', 'Rear Wing', 'Front Wing', 'Suspension', 'Engine']
     df = pd.read_csv(combo_filename)
     rankings_df = pd.read_csv(optimize_file).dropna()
+    print(len(rankings_df))
     avg = None
     if aggregate_tracks:
         track_groups = rankings_df.groupby(by=group_columns + ['Track']).mean()[['Win', 'Points']]
@@ -57,8 +58,11 @@ def optimize(combo_filename, optimize_file, use_wins, aggregate_tracks):
 
 def main():
 
+    data_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
+    combinations_file_default_path = os.path.join(data_dir, 'combinations.csv')
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('combo_file', type=str, default='combinations.csv', help='CSV with all possible combinations')
+    parser.add_argument('combo_file', type=str, default=combinations_file_default_path, help='CSV with all possible combinations')
     parser.add_argument('--coeffs', '-c', nargs=5, type=float, default=[1.0, 1.0, 1.0, 1.0, -1.0], help='Coeffs from [power, aero, grip, reliability, pit_stop_time]')
     parser.add_argument('--optimize', '-p', type=str, help='File to optimize against')
     parser.add_argument('--use-wins', '-w', action='store_true', help='Use wins instead of points')
